@@ -155,21 +155,29 @@ Original Code: ${code}`,
     }
   }
 
-  // Extract only code from response for copying
-  function extractCodeOnly(text) {
-    // Match markdown fenced code block or plain code
-    const codeBlockMatch = text.match(/```(?:\w*\n)?([\s\S]*?)```/);
-    if (codeBlockMatch) {
-      return codeBlockMatch[1].trim();
-    }
-    return text.trim();
-  }
-
   function copyCodeToClipboard() {
-    const codeOnly = extractCodeOnly(response);
-    if (!codeOnly) return;
-    navigator.clipboard.writeText(codeOnly);
-    alert("Code copied to clipboard!");
+    let codeToCopy = "";
+
+    // Try to extract from code blocks first
+    const codeMatches = [...response.matchAll(/```(?:\w*\n)?([\s\S]*?)```/g)];
+
+    if (codeMatches.length > 0) {
+      // Concatenate all code blocks
+      codeToCopy = codeMatches.map((match) => match[1].trim()).join("\n\n");
+    } else {
+      // Fallback: copy everything
+      codeToCopy = response.trim();
+    }
+
+    // Copy to clipboard
+    navigator.clipboard
+      .writeText(codeToCopy)
+      .then(() => {
+        alert("✅ Code copied to clipboard!");
+      })
+      .catch((err) => {
+        alert("❌ Failed to copy code: " + err.message);
+      });
   }
 
   // Calculate line and character counts for the editor code
