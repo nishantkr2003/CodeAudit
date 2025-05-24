@@ -6,7 +6,7 @@ import Select from "react-select";
 import { GoogleGenAI } from "@google/genai";
 import Markdown from "react-markdown";
 import RingLoader from "react-spinners/RingLoader";
-import { Code, FileCheck, ZapIcon } from "lucide-react";
+import { Code, FileCheck, ZapIcon, ClipboardCopy } from "lucide-react";
 
 const App = () => {
   const options = [
@@ -35,6 +35,9 @@ const App = () => {
   ];
 
   const [selectedOption, setSelectedOption] = useState(options[0]);
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState("");
 
   const customStyles = {
     control: (provided) => ({
@@ -79,10 +82,6 @@ const App = () => {
       width: "100%",
     }),
   };
-
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState("");
 
   // Initialize AI with environment variable
   const ai = new GoogleGenAI({
@@ -148,9 +147,7 @@ Please fix this code by:
 Return ONLY the complete fixed code without any explanations or markdown formatting.
 Original Code: ${code}`,
       });
-      setResponse(
-        "```" + selectedOption.value + "\n" + response.text + "\n```"
-      );
+      setResponse("" + "\n" + response.text + "\n");
     } catch (error) {
       setResponse("⚠️ Error generating fixed code: " + error.message);
     } finally {
@@ -158,12 +155,33 @@ Original Code: ${code}`,
     }
   }
 
+  // Extract only code from response for copying
+  function extractCodeOnly(text) {
+    // Match markdown fenced code block or plain code
+    const codeBlockMatch = text.match(/```(?:\w*\n)?([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      return codeBlockMatch[1].trim();
+    }
+    return text.trim();
+  }
+
+  function copyCodeToClipboard() {
+    const codeOnly = extractCodeOnly(response);
+    if (!codeOnly) return;
+    navigator.clipboard.writeText(codeOnly);
+    alert("Code copied to clipboard!");
+  }
+
+  // Calculate line and character counts for the editor code
+  const lineCount = code ? code.split("\n").length : 0;
+  const charCount = code.length;
+
   return (
     <div className="flex flex-col h-screen bg-zinc-950">
       <Navbar />
       <div className="flex flex-2 px-4 overflow-hidden">
         {/* Left Panel - Code Editor */}
-        <div className="w-1/2 flex flex-col p-4">
+        <div className="w-1/2 flex flex-col p-4 relative">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex-1">
               <Select
@@ -209,15 +227,36 @@ Original Code: ${code}`,
               }}
             />
           </div>
+
+          {/* Professional styled bottom-left code stats box */}
+          <div
+            className="absolute bottom-4 left-6 text-gray-200 font-mono text-sm select-none
+              bg-indigo-900 bg-opacity-75
+              px-3 py-1 rounded-md shadow-md
+              backdrop-blur-sm
+              border border-indigo-700
+              "
+          >
+            <span>Lines: {lineCount}</span> &nbsp;|&nbsp;{" "}
+            <span>Chars: {charCount}</span>
+          </div>
         </div>
 
         {/* Right Panel - Response */}
         <div className="w-1/2 flex flex-col bg-zinc-900 border-l border-zinc-800">
-          <div className="flex items-center px-6 py-3 border-b border-zinc-800 bg-zinc-900">
+          <div className="flex items-center px-6 py-3 border-b border-zinc-800 bg-zinc-900 justify-between">
             <div className="flex items-center gap-2">
               <ZapIcon size={20} className="text-purple-400" />
               <h2 className="text-lg font-semibold text-white">AI Response</h2>
             </div>
+            <button
+              onClick={copyCodeToClipboard}
+              title="Copy code only"
+              className="flex items-center gap-1 bg-purple-700 hover:bg-purple-600 transition-colors text-white rounded-md px-3 py-1 text-sm"
+            >
+              <ClipboardCopy size={16} />
+              Copy Code
+            </button>
           </div>
 
           <div className="flex-1 overflow-auto p-6">
@@ -226,7 +265,7 @@ Original Code: ${code}`,
                 <RingLoader color="#9333ea" size={60} />
               </div>
             ) : (
-              <div className="prose prose-invert max-w-none">
+              <div className="prose prose-invert max-w-none whitespace-pre-wrap break-words">
                 <Markdown>{response}</Markdown>
               </div>
             )}

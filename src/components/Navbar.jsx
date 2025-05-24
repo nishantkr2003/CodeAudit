@@ -1,5 +1,5 @@
-import React from 'react'
-import { BrainCircuit, Sun } from 'lucide-react';
+import React from "react";
+import { BrainCircuit, Sun } from "lucide-react";
 
 // This function returns a Navbar component
 const Navbar = () => {
@@ -22,6 +22,6 @@ const Navbar = () => {
       </div>
     </>
   );
-}
+};
 
-export default Navbar
+export default Navbar;
